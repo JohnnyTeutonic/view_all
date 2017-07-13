@@ -14,6 +14,7 @@ try:
 except FileNotFoundError:
     print("File not found. \n")
     sys.exit(0)
+
 plt.rcParams['image.cmap'] = 'gray'
 raw = np.max(raw) - raw
 raw = raw[raw.shape[0]//2]
@@ -21,28 +22,29 @@ gt = gt[gt.shape[0]//2]
 seeds = regular_seeds(raw.shape, np.random.randint(1100, 2100))
 automated_seg = morph.watershed(raw, seeds, compactness=0.001)
 
+
 def view_all(gt, automated_seg, num_elem=4):
-    """Generates an interactive figure with four panels - showing level of
-        split-VI error H(Y|X), H(X|Y), the worst false split comps, and worst
-        false merge comps, respectively. Clicking on the first two panels
-        results in highlighting these worst comps in the other two panels.
-        Parameters
-        gt: nd-array with shape M*N.
-            This corresponds to the 'ground truth'.
-        auto: nd-array with same shape as gt. This
-            corresponds to the automated segmentation.
-        num_elem: Int, optional.
-            This parameter determines the number of comps
-            shown upon click. Set to output '4' by default.
-        returns:
+    """Generate an interactive figure with four panels - showing level of
+    split-VI error H(Y|X), H(X|Y), the worst false split comps, and worst
+    false merge comps, respectively. Clicking on the first two panels
+    results in highlighting these worst comps in the other two panels.
+    Parameters
+
+    gt: nd-array with shape M*N.
+        This corresponds to the 'ground truth'.
+    auto: nd-array with same shape as gt. This
+        corresponds to the automated segmentation.
+    num_elem: Int, optional.
+        This parameter determines the number of comps
+        shown upon click. Set to output '4' by default.
+    returns:
         A panel with four images - the bottom right corresponds to the
         components that are the worst false splits in the automated
         segmentation that corresponds to the components clicked in
         the first window, and the top right shows the worst merges found in the
         ground truth relative to the automated seg.
     """
-
-        #%matplotlib auto
+    # %matplotlib auto
     if gt.shape != automated_seg.shape:
         return "Input arrays are not of the same shape."
     elif (type(gt) or type(automated_seg)) != np.ndarray:
