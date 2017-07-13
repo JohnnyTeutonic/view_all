@@ -59,7 +59,8 @@ def view_all(gt, automated_seg, num_elem=4):
         err_unsorted1 = err1[idxs1]
         err_img1 = err_unsorted1[gt]
         plt.interactive = False
-        fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
+        fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True,
+                               figsize=(10, 10))
         plt.setp(ax.flat, aspect=1.0, adjustable='box-forced')
         ax[0, 0].imshow(raw)
         viz.imshow_magma(err_img1, alpha=0.4, axis=ax[0, 0])
@@ -115,3 +116,6 @@ def view_all(gt, automated_seg, num_elem=4):
         fig.canvas.mpl_connect('button_press_event', onpress_s)
         plt.ioff()
         plt.show()
+
+
+view_all(gt, automated_seg)
