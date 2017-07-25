@@ -44,6 +44,8 @@ def view_all(gt, automated_seg, num_elem=4):
         the first window, and the top right shows the worst merges found in the
         ground truth relative to the automated seg.
     """
+
+    with plt.style.context('path/to/file'):
     # %matplotlib auto
     if gt.shape != automated_seg.shape:
         return "Input arrays are not of the same shape."
@@ -60,8 +62,9 @@ def view_all(gt, automated_seg, num_elem=4):
         err_img1 = err_unsorted1[gt]
         plt.interactive = False
         fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True,
-                               figsize=(10, 10))
+                               figsize=(12, 8))
         plt.setp(ax.flat, aspect=1.0, adjustable='box-forced')
+	plt.subplots_adjust(top=0.8)
         ax[0, 0].imshow(raw)
         viz.imshow_magma(err_img1, alpha=0.4, axis=ax[0, 0])
         ax[0, 1].imshow(raw)
@@ -112,8 +115,13 @@ def view_all(gt, automated_seg, num_elem=4):
             axes_image.set_array(new_seg)
             fig.canvas.draw()
 
-        fig.canvas.mpl_connect('button_press_event', onpress_m)
-        fig.canvas.mpl_connect('button_press_event', onpress_s)
+        def onpress(kind):
+            def _onpress(event):
+                # fill depending on 'kind'
+            return _onpress
+
+        fig.canvas.mpl_connect('button_press_event', onpress('merge'))
+        fig.canvas.mpl_connect('button_press_event', onpress('split'))
         plt.ioff()
         plt.show()
 

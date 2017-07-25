@@ -10,6 +10,7 @@ from skimage.segmentation import mark_boundaries
 import sys
 import argparse
 
+
 PARSER = argparse.ArgumentParser('cmd-line')
 PARSER.add_argument('-r', '--raw', help='raw hdf file.', default='volumes/raw')
 PARSER.add_argument('-l', '--label', help='labeled hdf file.', default='volumes/labels/neuron_ids')
