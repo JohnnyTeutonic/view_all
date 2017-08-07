@@ -1,19 +1,34 @@
 from gala import evaluate as ev, imio, viz
+import glob
 from matplotlib import pyplot as plt
+import numba
 import numpy as np
+from os import path
 from skimage.util import regular_seeds
 from skimage import morphology as morph, measure
 from skimage.segmentation import mark_boundaries
 import sys
 import argparse
-from functools import wraps
 
-try:
-    raw, gt = imio.read_cremi(sys.argv[1],  datasets=
+if len(sys.argv==1):
+    my_path = input('Directory to search for hdf files?%n\
+                    Press "enter" to escape')
+    if my_path !='':
+        os.chdir(my_path)
+        abs_path = path.abspath(my_path)
+        full_path = path.join(abs_path, 'research_project_files/Cremi_Data')
+        for _, _, filenames in os.walk(full_path):
+            for filename in glob.fnmatch.filter(filenames, '*.hdf'):
+                raw, gt = imio.read_cremi(filename, datasets=['volumes/raw,' \
+                                    'volumes/labels/neuron_ids'])
+
+else:
+    try:
+        raw, gt = imio.read_cremi(sys.argv[1],  datasets=
                               ['volumes/raw', 'volumes/labels/neuron_ids'])
-except FileNotFoundError:
-    print("File not found. \n")
-    sys.exit(0)
+    except FileNotFoundError:
+        print("File not found. \n")
+        sys.exit(0)
 
 plt.rcParams['image.cmap'] = 'gray'
 plt.rcParams['font.size'] = 8
@@ -23,16 +38,6 @@ gt = gt[gt.shape[0]//2]
 seeds = regular_seeds(raw.shape, np.random.randint(1100, 2100))
 automated_seg = morph.watershed(raw, seeds, compactness=0.001)
 
-def memo(func):
-    cache = {}
-    @wraps(func)
-    def wrap(*args):
-        if args not in cache:
-            cache[args] = func(*args)
-        return cache[args]
-    return wrap
-
-@memo
 def view_all(gt, automated_seg, num_elem=4):
     """Generates a click-able image of the auto seg - upon click of
     the auto seg, shows the largest comps of the gt that corresponds
@@ -52,7 +57,7 @@ def view_all(gt, automated_seg, num_elem=4):
     segmentation that corresponds to the components clicked in
     the first window."""
 
-    %matplotlib auto
+    # %matplotlib auto
     if gt.shape != automated_seg.shape:
         return "Input arrays are not of the same shape."
     elif (type(gt) or type(automated_seg)) != np.ndarray:
@@ -118,7 +123,7 @@ def view_all(gt, automated_seg, num_elem=4):
     plt.ioff()
     plt.show()
 
-def view_all_1(gt, automated_seg, num_elem=4):
+def view_all_1(gt, automated_seg, num_elem=4, axis=None):
     """Generates a click-able image of the auto seg - upon click of
     the auto seg, shows the largest comps of the gt that corresponds
     to the worst false merges made in the automatic seg at the approx.
@@ -148,8 +153,11 @@ def view_all_1(gt, automated_seg, num_elem=4):
     err_unsorted = err2[idxs]
     err_img = err_unsorted[automated_seg]
     plt.interactive = False
-    fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True, figsize=(9,9))
-    plt.setp(ax.flat, aspect=1.0, adjustable='box-forced')
+    if axis is None:
+        fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True, figsize=(9,9))
+        plt.setp(ax.flat, aspect=1.0, adjustable='box-forced')
+    else:
+        ax = axis
     ax[0, 0].imshow(raw, cmap='gray')
     viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(raw, cmap='gray')
@@ -163,6 +171,7 @@ def view_all_1(gt, automated_seg, num_elem=4):
     ax[1, 0].set_title("Ground truth with random cm: click to show worst merges.")
     ax[1, 1].set_title("Worst split comps in the gt, colored by VI error.")
 
+    @numba.jit
     def drawer(seg, comps, limit=True):
         a_seg = np.zeros_like(seg.astype('float64'))
         factor = (seg.max() // num_elem)
@@ -177,6 +186,7 @@ def view_all_1(gt, automated_seg, num_elem=4):
                     break
         return a_seg
 
+    @numba.jit
     def _onpress(event):
         if event.inaxes == ax[1, 0]:
             if event.button != 1:
