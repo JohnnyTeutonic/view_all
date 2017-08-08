@@ -10,7 +10,7 @@ from skimage.util import regular_seeds
 from skimage import morphology as morph
 import argparse
 
-if len(sys.argv == 1):
+if len(sys.argv) == 1:
     MY_PATH = input('Directory to search for hdf files?%n\
                     Press "enter" to escape.')
     if MY_PATH != '':
@@ -19,7 +19,7 @@ if len(sys.argv == 1):
         FULL_PATH = path.join(ABS_PATH, 'research_project_files/Cremi_Data')
         for _, _, filenames in os.walk(FULL_PATH):
             for filename in glob.fnmatch.filter(filenames, '*.hdf'):
-                raw, gt = imio.read_cremi(filename, datasets=['volumes/raw',
+                RAW, GT = imio.read_cremi(filename, datasets=['volumes/raw',
                                                               'volumes/labels/\
                                                               neuron_ids'])
 
@@ -79,13 +79,13 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None):
         plt.setp(ax.flat, aspect=1.0, adjustable='box-forced')
     else:
         ax = axis
-    ax[0, 0].imshow(raw, cmap='gray')
+    ax[0, 0].imshow(RAW, cmap='gray')
     viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[0, 0])
-    ax[0, 1].imshow(raw, cmap='gray')
+    ax[0, 1].imshow(RAW, cmap='gray')
     axes_image_1 = viz.imshow_rand(err_img_1, alpha=0.4, axis=ax[0, 1])
-    ax[1, 0].imshow(raw, cmap='gray')
+    ax[1, 0].imshow(RAW, cmap='gray')
     viz.imshow_rand(err_img, alpha=0.4, axis=ax[1, 0])
-    ax[1, 1].imshow(raw, cmap='gray')
+    ax[1, 1].imshow(RAW, cmap='gray')
     axes_image = viz.imshow_rand(gt, alpha=0.4, axis=ax[1, 1])
     ax[0, 0].set_title("Automated seg: click to show worst splits.")
     ax[0, 1].set_title("Worst merge comps in gt, colored by VI error.")
