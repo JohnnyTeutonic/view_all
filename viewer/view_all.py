@@ -45,7 +45,9 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None):
     the auto seg, shows the largest comps of the gt that corresponds
     to the worst false merges made in the automatic seg at the approx.
     same location of the click.
+
     Parameters
+    ----------
     gt: nd-array with shape M*N.
         This corresponds to the 'ground truth'.
     auto: nd-array with same shape as gt. This
@@ -53,7 +55,9 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None):
     num_elem: Int, optional.
         This parameter determines the number of comps
         shown upon click. Set to output '4' by default.
-    returns:
+
+    Returns
+    -------
     A panel with four images - the bottom right corresponds to the
     components that are the worst false merges in the automated
     segmentation that corresponds to the components clicked in
