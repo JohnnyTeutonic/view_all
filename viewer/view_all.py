@@ -40,11 +40,8 @@ SEEDS = regular_seeds(RAW.shape, np.random.randint(1100, 2100))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
 
 
-def view_all_1(gt, automated_seg, num_elem=4, axis=None):
-    """Generates a click-able image of the auto seg - upon click of
-    the auto seg, shows the largest comps of the gt that corresponds
-    to the worst false merges made in the automatic seg at the approx.
-    same location of the click.
+def view_all_1(gt, automated_seg, num_elem=4, axis=None, ipy=False):
+    """Generates an interactive figure highlighting the VI error.
 
     Parameters
     ----------
@@ -63,7 +60,11 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None):
     segmentation that corresponds to the components clicked in
     the first window."""
 
-    # matplotlib auto
+
+    if ipy:
+	import IPython
+	IPython.InteractiveShell
+	get_ipython().magic("%matplotlib auto")
     if gt.shape != automated_seg.shape:
         return "Input arrays are not of the same shape."
     elif (type(gt) or type(automated_seg)) != np.ndarray:
