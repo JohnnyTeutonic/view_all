@@ -78,7 +78,7 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None):
     err_img_1 = err_unsorted[gt]
     plt.interactive = False
     if axis is None:
-        fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True, \
+        fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True,
                                figsize=(9, 9))
         plt.setp(ax.flat, aspect=1.0, adjustable='box-forced')
     else:
