@@ -66,7 +66,7 @@ backend      : TkAgg
 # you if backend_fallback is True
 #backend_fallback: True
 
-#interactive  : False
+interactive  : False
 #toolbar      : toolbar2   # None | toolbar2  ("classic" is deprecated)
 #timezone     : UTC        # a pytz timezone string, e.g., US/Central or Europe/Paris
 

@@ -1,15 +1,20 @@
-import fnmatch
+"""Script that visualises the split-VI error from an input hdf file.
+
+Input file must contain two hdf groups - a raw group, and a group containing
+labelled neuron ids.
+"""
+# Builtins
 from os import path
 import os
 import re
 import sys
+# Libraries
 import numpy as np
 import numba
 from gala import evaluate as ev, imio, viz
 from matplotlib import pyplot as plt
 from skimage.util import regular_seeds
 from skimage import morphology as morph
-import argparse
 import click
 
 if len(sys.argv) == 1:
@@ -67,6 +72,7 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
         return "Input arrays are not of the same shape."
     elif (type(gt) or type(automated_seg)) != np.ndarray:
         return "Input arrays not of valid type."
+    vint = np.vectorize(int)
     cont = ev.contingency_table(automated_seg, gt)
     ii1, err1, ii2, err2 = ev.sorted_vi_components(automated_seg, gt)
     idxs2 = np.argsort(ii2)
@@ -75,7 +81,6 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
     idxs1 = np.argsort(ii1)
     err_unsorted = err1[idxs1]
     err_img_1 = err_unsorted[gt]
-    plt.interactive = False
     if axis is None:
         fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
         plt.setp(ax.flat, adjustable='box-forced')
@@ -112,7 +117,6 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
 
     @numba.jit
     def _onpress(event):
-        vint = np.vectorize(int)
         if event.inaxes == ax[1, 0]:
             if event.button != 1:
                 return
