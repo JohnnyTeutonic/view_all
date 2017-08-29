@@ -25,10 +25,10 @@ if len(sys.argv) == 1:
         print(MY_PATH)
         os.chdir(MY_PATH)
         FULL_PATH = path.join(MY_PATH, 'research_project_files/Cremi_Data')
-        file_pattern = re.compile(r'[a-zA-z]{6}_[A-Z]+?_[\d]{8}\.hdf')
+        REGEX = re.compile(r'[a-zA-z]{6}_[A-Z]+?_[\d]{8}\.hdf')
         for _, _, filenames in os.walk(FULL_PATH):
             for filename in filenames:
-                if re.search(file_pattern, filename):
+                if re.search(REGEX, filename):
                     RAW, GT = imio.read_cremi(str(filename), datasets=["""volumes/raw""", """volumes/
                                          labels/neuron_ids"""])
                     break
@@ -75,12 +75,9 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
     vint = np.vectorize(int)
     cont = ev.contingency_table(automated_seg, gt)
     ii1, err1, ii2, err2 = ev.sorted_vi_components(automated_seg, gt)
-    idxs2 = np.argsort(ii2)
-    err_unsorted = err2[idxs2]
-    err_img = err_unsorted[automated_seg]
-    idxs1 = np.argsort(ii1)
-    err_unsorted = err1[idxs1]
-    err_img_1 = err_unsorted[gt]
+    idxs2, idxs1 = np.argsort(ii2), np.argsort(ii1)
+    err_unsorted, err_unsorted_2 = err2[idxs2], err1[idxs1]
+    err_img, err_img_1 = err_unsorted[automated_seg], err_unsorted_2[gt]
     if axis is None:
         fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
         plt.setp(ax.flat, adjustable='box-forced')
