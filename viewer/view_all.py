@@ -18,8 +18,8 @@ from skimage import morphology as morph
 import click
 
 if len(sys.argv) == 1:
-    MY_PATH = input("""Directory to search for hdf files? Press "enter" to
-    escape.\n""")
+    MY_PATH = input("""Directory to search for hdf files? Press "enter" to"""
+                    """ escape.\n""")
     if MY_PATH != '':
         MY_PATH = path.join(path.expanduser(MY_PATH))
         print(MY_PATH)
@@ -29,14 +29,15 @@ if len(sys.argv) == 1:
         for _, _, filenames in os.walk(FULL_PATH):
             for filename in filenames:
                 if re.search(REGEX, filename):
-                    RAW, GT = imio.read_cremi(str(filename), datasets=["""volumes/raw""", """volumes/
+                    RAW, GT = imio.read_cremi(filename, datasets=["""volumes/raw""", """volumes/
                                          labels/neuron_ids"""])
-                    break
-elif len(sys.argv) == 2:
+            break
+
+if len(sys.argv) == 2:
     try:
-        RAW, GT = imio.read_cremi(sys.argv[1],
-                                  datasets=["volumes/raw",
-                                            "volumes/labels/neuron_ids"])
+        RAW, GT = imio.read_cremi(sys.argv[1], datasets=["""volumes/raw""",
+                                                         """volumes/labels/
+                                                         neuron_ids"""])
     except FileNotFoundError:
         print("File not found. \n")
         sys.exit(0)
@@ -46,7 +47,6 @@ RAW = RAW[RAW.shape[0]//2]
 GT = GT[GT.shape[0]//2]
 SEEDS = regular_seeds(RAW.shape, np.random.randint(1100, 2100))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
-
 
 def view_all(gt, automated_seg, num_elem=4, axis=None):
     """Generate an interactive figure highlighting the VI error.
@@ -136,5 +136,6 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
     plt.ioff()
     plt.show()
 
+#% lprun -s -f view_all(GT, AUTOMATED_SEG)
 
 view_all(GT, AUTOMATED_SEG)
