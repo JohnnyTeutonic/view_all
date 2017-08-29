@@ -17,6 +17,13 @@ from skimage.util import regular_seeds
 from skimage import morphology as morph
 import click
 
+@click.command()
+@click.option('--raw', default='volumes/raw', help='raw hdf file.')
+@click.option('--label', default='volumes/labels/neuron_ids',
+              prompt='segmentation file', help='labeled hdf file.')
+@click.option('--input_file', prompt='what is the input file', help='The input image file.')
+
+
 if len(sys.argv) == 1:
     MY_PATH = input("""Directory to search for hdf files? Press "enter" to"""
                     """ escape.\n""")
@@ -140,6 +147,5 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
     plt.ioff()
     plt.show()
 
-#% lprun -s -f view_all(GT, AUTOMATED_SEG)
 
 view_all(GT, AUTOMATED_SEG)
