@@ -1,4 +1,4 @@
-import glob
+import fnmatch
 from os import path
 import os
 import sys
@@ -14,15 +14,18 @@ if len(sys.argv) == 1:
     MY_PATH = input('Directory to search for hdf files?%n\
                     Press "enter" to escape.')
     if MY_PATH != '':
+        MY_PATH = path.join(path.expanduser(MY_PATH))
+        print(MY_PATH)
         os.chdir(MY_PATH)
-        ABS_PATH = path.abspath(MY_PATH)
-        FULL_PATH = path.join(ABS_PATH, 'research_project_files/Cremi_Data')
+        FULL_PATH = path.join(MY_PATH, 'research_project_files/Cremi_Data')
         for _, _, filenames in os.walk(FULL_PATH):
-            for filename in glob.fnmatch.filter(filenames, '*.hdf'):
-                RAW, GT = imio.read_cremi(filename, datasets=['volumes/raw',
-                                                              'volumes/labels/\
-                                                              neuron_ids'])
-
+            for filename in fnmatch.fnmatchcase(str(filenames), '*.hdf'):
+                if filename in '+':
+                    pass
+                RAW, GT = imio.read_cremi(filename, datasets=
+                                          ['volumes/raw',
+                                           'volumes/labels/neuron_ids'])
+            break
 else:
     try:
         RAW, GT = imio.read_cremi(sys.argv[1], datasets=
@@ -40,7 +43,7 @@ SEEDS = regular_seeds(RAW.shape, np.random.randint(1100, 2100))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
 
 
-def view_all_1(gt, automated_seg, num_elem=4, axis=None, ipy=False):
+def view_all(gt, automated_seg, num_elem=4, axis=None):
     """Generates an interactive figure highlighting the VI error.
 
     Parameters
@@ -60,11 +63,6 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None, ipy=False):
     segmentation that corresponds to the components clicked in
     the first window."""
 
-
-    if ipy:
-	import IPython
-	IPython.InteractiveShell
-	get_ipython().magic("%matplotlib auto")
     if gt.shape != automated_seg.shape:
         return "Input arrays are not of the same shape."
     elif (type(gt) or type(automated_seg)) != np.ndarray:
@@ -83,7 +81,8 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None, ipy=False):
                                figsize=(9, 9))
         plt.setp(ax.flat, aspect=1.0, adjustable='box-forced')
     else:
-        ax = axis
+        for i in range(len(axis)):
+            ax = axis[i]
     ax[0, 0].imshow(RAW, cmap='gray')
     viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(RAW, cmap='gray')
@@ -114,10 +113,11 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None, ipy=False):
 
     @numba.jit
     def _onpress(event):
+        vint = np.vectorize(int)
         if event.inaxes == ax[1, 0]:
             if event.button != 1:
                 return
-            x, y = int(event.xdata), int(event.ydata)
+            x, y = vint(event.xdata), vint(event.ydata)
             comps = ev.split_components(gt[y, x], cont, axis=1, num_elems=None)
             new_seg = drawer(automated_seg, comps)
             axes_image.set_array(new_seg)
@@ -125,7 +125,7 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None, ipy=False):
         if event.inaxes == ax[0, 0]:
             if event.button != 1:
                 return
-            x, y = int(event.xdata), int(event.ydata)
+            x, y = vint(event.xdata), vint(event.ydata)
             comps = ev.split_components(automated_seg[y, x], cont, axis=0,
                                         num_elems=None)
             new_seg_1 = drawer(gt, comps, limit=False)
@@ -137,4 +137,4 @@ def view_all_1(gt, automated_seg, num_elem=4, axis=None, ipy=False):
     plt.show()
 
 
-view_all_1(GT, AUTOMATED_SEG)
+view_all(GT, AUTOMATED_SEG)
