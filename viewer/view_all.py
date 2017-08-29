@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """Script that visualises the split-VI error from an input hdf file.
 
 Input file must contain two hdf groups - a raw group, and a group containing
@@ -10,7 +11,7 @@ import re
 import sys
 # Libraries
 import numpy as np
-import numba
+from numba import jit
 from gala import evaluate as ev, imio, viz
 from matplotlib import pyplot as plt
 from skimage.util import regular_seeds
@@ -23,12 +24,10 @@ if len(sys.argv) == 1:
                     """ escape.\n""")
     if MY_PATH != '':
         MY_PATH = path.join(path.expanduser(MY_PATH))
-        print(MY_PATH)
+        if not path.exists(MY_PATH):
+            raise FileNotFoundError
         os.chdir(MY_PATH)
         FULL_PATH = path.join(MY_PATH, 'research_project_files/Cremi_Data')
-        if not path.exists(FULL_PATH):
-            print("Path doesn't exist")
-            sys.exit(0)
         REGEX = re.compile(r'[a-zA-z]{6}_[A-Z]+?_[\d]{8}\.hdf')
         for _, _, filenames in os.walk(FULL_PATH):
             for filename in filenames:
@@ -36,7 +35,9 @@ if len(sys.argv) == 1:
                     RAW, GT = imio.read_cremi(filename, datasets=["""volumes/raw""", """volumes/
                                          labels/neuron_ids"""])
             break
-
+    else:
+        print("Program exited. \n")
+        sys.exit(0)
 if len(sys.argv) == 2:
     try:
         RAW, GT = imio.read_cremi(sys.argv[1], datasets=
@@ -45,7 +46,6 @@ if len(sys.argv) == 2:
     except FileNotFoundError:
         print("File not found. \n")
         sys.exit(0)
-
 RAW = np.max(RAW) - RAW
 RAW = RAW[RAW.shape[0]//2]
 GT = GT[GT.shape[0]//2]
@@ -53,12 +53,12 @@ SEEDS = regular_seeds(RAW.shape, np.random.randint(1100, 2100))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
 
 
-@click.command
-@click.option('--raw', default='volumes/raw', help='raw hdf file.')
-@click.option('--label', default='volumes/labels/neuron_ids',
-              prompt='segmentation file', help='labeled hdf file.')
-@click.option('--input_file', prompt='what is the input file',
-              help='The input image file.')
+#@click.command
+#@click.option('--raw', default='volumes/raw', help='raw hdf file.')
+#@click.option('--label', default='volumes/labels/neuron_ids',
+#              prompt='segmentation file', help='labeled hdf file.')
+#@click.option('--input_file', prompt='what is the input file',
+#              help='The input image file.')
 def view_all(gt, automated_seg, num_elem=4, axis=None):
     """Generate an interactive figure highlighting the VI error.
 
@@ -93,8 +93,7 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
         fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
         plt.setp(ax.flat, adjustable='box-forced')
     else:
-        for i in range(len(axis)):
-            ax = axis[i]
+        fig, ax = plt.subplots(*axis)
     ax[0, 0].imshow(RAW)
     viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(RAW)
@@ -108,7 +107,7 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
     ax[1, 0].set_title("Ground truth: click to show worst splits.")
     ax[1, 1].set_title("Worst split comps in the gt, colored by VI error.")
 
-    @numba.jit
+    @jit
     def drawer(seg, comps, limit=True):
         a_seg = np.zeros_like(seg.astype('float64'))
         factor = (seg.max() // num_elem)
@@ -123,7 +122,7 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
                     break
         return a_seg
 
-    @numba.jit
+    @jit
     def _onpress(event):
         if event.inaxes == ax[1, 0]:
             if event.button != 1:

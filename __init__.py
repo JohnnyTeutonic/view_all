@@ -1,8 +1,8 @@
 """
-View_All
+Segment_Viewer
 ===
 
-    View_All is a Python package for nD image segmentation.
+    Segment_Viewer is a Python package for nD image segmentation.
 """
 
 __author__ = 'Jonathan Reich <jreich@student.unimelb.edu.au>, '
