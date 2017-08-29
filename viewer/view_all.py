@@ -17,12 +17,6 @@ from skimage.util import regular_seeds
 from skimage import morphology as morph
 import click
 
-@click.command()
-@click.option('--raw', default='volumes/raw', help='raw hdf file.')
-@click.option('--label', default='volumes/labels/neuron_ids',
-              prompt='segmentation file', help='labeled hdf file.')
-@click.option('--input_file', prompt='what is the input file', help='The input image file.')
-
 
 if len(sys.argv) == 1:
     MY_PATH = input("""Directory to search for hdf files? Press "enter" to"""
@@ -45,9 +39,9 @@ if len(sys.argv) == 1:
 
 if len(sys.argv) == 2:
     try:
-        RAW, GT = imio.read_cremi(sys.argv[1], datasets=["""volumes/raw""",
-                                                         """volumes/labels/
-                                                         neuron_ids"""])
+        RAW, GT = imio.read_cremi(sys.argv[1], datasets=
+                                  ["""volumes/raw""",
+                                   """volumes/labels/neuron_ids"""])
     except FileNotFoundError:
         print("File not found. \n")
         sys.exit(0)
@@ -59,6 +53,12 @@ SEEDS = regular_seeds(RAW.shape, np.random.randint(1100, 2100))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
 
 
+@click.command
+@click.option('--raw', default='volumes/raw', help='raw hdf file.')
+@click.option('--label', default='volumes/labels/neuron_ids',
+              prompt='segmentation file', help='labeled hdf file.')
+@click.option('--input_file', prompt='what is the input file',
+              help='The input image file.')
 def view_all(gt, automated_seg, num_elem=4, axis=None):
     """Generate an interactive figure highlighting the VI error.
 
@@ -148,4 +148,5 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
     plt.show()
 
 
-view_all(GT, AUTOMATED_SEG)
+if __name__ == '__main__':
+    view_all(GT, AUTOMATED_SEG)
