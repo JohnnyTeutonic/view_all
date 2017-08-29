@@ -25,6 +25,9 @@ if len(sys.argv) == 1:
         print(MY_PATH)
         os.chdir(MY_PATH)
         FULL_PATH = path.join(MY_PATH, 'research_project_files/Cremi_Data')
+        if not path.exists(FULL_PATH):
+            print("Path doesn't exist")
+            sys.exit(0)
         REGEX = re.compile(r'[a-zA-z]{6}_[A-Z]+?_[\d]{8}\.hdf')
         for _, _, filenames in os.walk(FULL_PATH):
             for filename in filenames:
@@ -47,6 +50,7 @@ RAW = RAW[RAW.shape[0]//2]
 GT = GT[GT.shape[0]//2]
 SEEDS = regular_seeds(RAW.shape, np.random.randint(1100, 2100))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
+
 
 def view_all(gt, automated_seg, num_elem=4, axis=None):
     """Generate an interactive figure highlighting the VI error.
