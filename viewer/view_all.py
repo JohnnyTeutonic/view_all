@@ -130,10 +130,15 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
     @jit
     def _onpress(event):
         if not (event.inaxes == ax[1, 0] or event.inaxes == ax[0, 0]):
-            fig.text(0.5, 0.5, s="Must click on left axes to show comps!")
+            fig.text(0.5, 0.5, s="Must click on left axes to show comps!",
+                     ha="center")
+            fig.canvas.draw_idle()
         if event.inaxes == ax[1, 0]:
             if event.button != 1:
                 return
+            for txt in fig.texts:
+                txt.set_visible(False)
+            fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
             comps = ev.split_components(gt[y, x], cont, axis=1, num_elems=None)
             new_seg = drawer(automated_seg, comps)
@@ -142,6 +147,9 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
         if event.inaxes == ax[0, 0]:
             if event.button != 1:
                 return
+            for txt in fig.texts:
+                txt.set_visible(False)
+            fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
             comps = ev.split_components(automated_seg[y, x], cont, axis=0,
                                         num_elems=None)
