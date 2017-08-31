@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 from skimage.util import regular_seeds
 from skimage import morphology as morph
 import click
-
+import prompt_toolkit
 
 if len(sys.argv) == 1:
     MY_PATH = input("""Directory to search for hdf files? Press "enter" to"""
@@ -93,7 +93,12 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
         fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
         plt.setp(ax.flat, adjustable='box-forced')
     else:
-        fig, ax = plt.subplots(*axis)
+        fig, ax = plt.subplots(nrows=len(axis)//2, ncols=len(axis)//2,
+                               sharex=True, sharey=True)
+        for i in range(len(axis)//2):
+            ax[0, i] = ax[i]
+        for i in range(0, (len(axis)//2)):
+            ax[1, i] = ax[i+2]
     ax[0, 0].imshow(RAW)
     viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(RAW)
@@ -124,6 +129,8 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
 
     @jit
     def _onpress(event):
+        if not (event.inaxes == ax[1, 0] or event.inaxes == ax[0, 0]):
+            fig.text(0.5, 0.5, s="Must click on left axes to show comps!")
         if event.inaxes == ax[1, 0]:
             if event.button != 1:
                 return
