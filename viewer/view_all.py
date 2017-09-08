@@ -28,7 +28,7 @@ if len(sys.argv) == 1:
             raise FileNotFoundError
         os.chdir(MY_PATH)
         FULL_PATH = path.join(MY_PATH, 'research_project_files/Cremi_Data')
-        REGEX = re.compile(r'[a-zA-z]{6}_[A-Z]+?_[\d]{8}\.hdf')
+        REGEX = re.compile(r'^(\w)+_(\w)+_(\d)+(\.hdf)$', flags=re.I | re.M)
         for _, _, filenames in os.walk(FULL_PATH):
             for filename in filenames:
                 if re.search(REGEX, filename):
@@ -59,7 +59,7 @@ AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
 #              prompt='segmentation file', help='labeled hdf file.')
 #@click.option('--input_file', prompt='what is the input file',
 #              help='The input image file.')
-def view_all(gt, automated_seg, num_elem=4, axis=None):
+def view_all(gt, automated_seg, num_elem=6, axis=None):
     """Generate an interactive figure highlighting the VI error.
 
     Parameters
@@ -86,9 +86,9 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
     vint = np.vectorize(int)
     cont = ev.contingency_table(automated_seg, gt)
     ii1, err1, ii2, err2 = ev.sorted_vi_components(automated_seg, gt)
-    idxs2, idxs1 = np.argsort(ii2), np.argsort(ii1)
-    err_unsorted, err_unsorted_2 = err2[idxs2], err1[idxs1]
-    err_img, err_img_1 = err_unsorted[automated_seg], err_unsorted_2[gt]
+    idxs1, idxs2 = np.argsort(ii1), np.argsort(ii2)
+    err_unsorted, err_unsorted_2 = err1[idxs1], err2[idxs2]
+    err_img, err_img_1 = err_unsorted[gt], err_unsorted_2[automated_seg]
     if axis is None:
         fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
         plt.setp(ax.flat, adjustable='box-forced')
@@ -100,13 +100,13 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
         for i in range(0, (len(axis)//2)):
             ax[1, i] = ax[i+2]
     ax[0, 0].imshow(RAW)
-    viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[0, 0])
+    viz.imshow_magma(err_img, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(RAW)
-    axes_image_1 = viz.imshow_rand(err_img_1, alpha=0.4, axis=ax[0, 1])
+    axes_image_1 = ax[0, 1].imshow(err_img_1, alpha=0.4)
     ax[1, 0].imshow(RAW)
-    viz.imshow_rand(err_img, alpha=0.4, axis=ax[1, 0])
+    viz.imshow_magma(err_img_1, alpha=0.4, axis=ax[1, 0])
     ax[1, 1].imshow(RAW)
-    axes_image = viz.imshow_rand(gt, alpha=0.4, axis=ax[1, 1])
+    axes_image = viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[1, 1])
     ax[0, 0].set_title("Automated seg: click to show worst merges.")
     ax[0, 1].set_title("Worst merge comps in gt, colored by VI error.")
     ax[1, 0].set_title("Ground truth: click to show worst splits.")
@@ -114,6 +114,7 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
 
     @jit
     def drawer(seg, comps, limit=True):
+        """Dynamically redraw the worst split/merge comps."""
         a_seg = np.zeros_like(seg.astype('float64'))
         factor = (seg.max() // num_elem)
         lim = 0.0
@@ -129,6 +130,7 @@ def view_all(gt, automated_seg, num_elem=4, axis=None):
 
     @jit
     def _onpress(event):
+        """Matplotlib 'onpress' event handler."""
         if not (event.inaxes == ax[1, 0] or event.inaxes == ax[0, 0]):
             fig.text(0.5, 0.5, s="Must click on left axes to show comps!",
                      ha="center")
