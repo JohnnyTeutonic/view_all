@@ -2,6 +2,7 @@ from gala import evaluate as ev, imio, viz, morpho, agglo, classify, features
 from skimage.util import regular_seeds
 from skimage import io
 import numpy as np
+import numexpr
 from matplotlib import pyplot as plt
 raw, gt = imio.read_cremi("Cremi_Data/sample_B_20160501.hdf", datasets=['volumes/raw', 'volumes/labels/neuron_ids'])
 bpm = imio.read_h5_stack('raw_slice_1_Probabilities.h5', group='bpm_raw_b')
@@ -9,7 +10,7 @@ membrane_prob = bpm[..., 2]
 train_slice = (slice(0, 15), slice(0, 480), slice(0, 480))
 test_slice = (slice(0, 15), slice(480, 960), slice(480, 960))
 gt_larger_2 = gt[train_slice]
-raw_larger_2 = 1-raw[train_slice]/255
+raw_larger_2 = numexpr.evaluate('1-raw[train_slice]/255')
 ws_larger_seeds_2 = regular_seeds(raw_larger_2[0].shape, n_points=700)
 ws_larger_seeds_2 = np.broadcast_to(ws_larger_seeds_2, raw_larger_2.shape)
 ws_larger_water = morpho.watershed_sequence(membrane_prob[train_slice], ws_larger_seeds_2, n_jobs=-1)
