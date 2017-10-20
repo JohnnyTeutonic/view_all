@@ -1,9 +1,11 @@
+import os
 from gala import evaluate as ev, imio, viz, morpho, agglo, classify, features
 from skimage.util import regular_seeds
 from skimage import io
 import numpy as np
 import numexpr
 from matplotlib import pyplot as plt
+os.chdir('/home/johnnyt/Documents/research_project_files')
 raw, gt = imio.read_cremi("Cremi_Data/sample_B_20160501.hdf", datasets=['volumes/raw', 'volumes/labels/neuron_ids'])
 bpm = imio.read_h5_stack('raw_slice_1_Probabilities.h5', group='bpm_raw_b')
 membrane_prob = bpm[..., 2]
@@ -17,7 +19,7 @@ ws_larger_water = morpho.watershed_sequence(membrane_prob[train_slice], ws_large
 raw_larger_testing_2 = membrane_prob[test_slice]
 gt_larger_testing_2 = gt[test_slice]
 gg = np.argsort(np.bincount(gt_larger_2.astype(int).ravel()))[-10:]
-sparse_large = imio.extract_segments(gt_larger_2, ids = gg)
+sparse_large = imio.extract_segments(gt_larger_2,ids = gg)
 ws_larger_testing_2 = morpho.watershed_sequence(raw_larger_testing_2, ws_larger_seeds_2, n_jobs=-1)
 fm = features.moments.Manager()
 fh = features.histogram.Manager()
@@ -42,8 +44,11 @@ ax.set_aspect(1)
 fig1, ax1 = plt.subplots()
 ax1.imshow(raw_larger_2[0], alpha=1, cmap='gray')
 viz.imshow_rand(ws_larger_water[0], alpha=0.4, axis=ax)
+sorted_seg_indices = np.argsort(split_vi_array_2.sum(axis=1))
+best_seg_id = np.argmin(sorted_seg)
 target_segs = np.argsort(np.bincount(seg_stack_large_2[19].astype(int).ravel()))[-10:]
-extracted_seg= imio.extract_segments(seg_stack_large_2[19], ids=target_segs)
+extracted_segs = imio.extract_segments(seg_stack_large_2[19], ids=target_segs)
+imio.write_h5_stack(npy_vol=split_vi_array_2, compression='lzf', fn='stack_of_segs_20_10.h5')
 imio.write_vtk(extracted_seg, fn='extraced_seg_5_10.vtk',spacing=[4, 4, 40])
 imio.write_vtk(gt_larger_2,fn='extraced_gt_5_10.vtk',spacing=[4, 4, 40])
 imio.write_vtk(img_as_ubyte(raw_larger_2),fn='extraced_raw_5_10.vtk',spacing=[4, 4, 40])
