@@ -1,5 +1,7 @@
 import os
 from gala import evaluate as ev, imio, viz, morpho, agglo, classify, features
+from skimage.segmentation import join_segmentations
+from skimage.color import label2rgb
 from skimage.util import regular_seeds
 from skimage import io
 import numpy as np
@@ -19,7 +21,7 @@ ws_larger_water = morpho.watershed_sequence(membrane_prob[train_slice], ws_large
 raw_larger_testing_2 = membrane_prob[test_slice]
 gt_larger_testing_2 = gt[test_slice]
 gg = np.argsort(np.bincount(gt_larger_2.astype(int).ravel()))[-10:]
-sparse_large = imio.extract_segments(gt_larger_2,ids = gg)
+sparse_large = imio.extract_segments(gt_larger_2, ids = gg)
 ws_larger_testing_2 = morpho.watershed_sequence(raw_larger_testing_2, ws_larger_seeds_2, n_jobs=-1)
 fm = features.moments.Manager()
 fh = features.histogram.Manager()
@@ -46,9 +48,20 @@ ax1.imshow(raw_larger_2[0], alpha=1, cmap='gray')
 viz.imshow_rand(ws_larger_water[0], alpha=0.4, axis=ax)
 sorted_seg_indices = np.argsort(split_vi_array_2.sum(axis=1))
 best_seg_id = np.argmin(sorted_seg)
+best_seg = seg_stack_large_2[best_seg_id]
 target_segs = np.argsort(np.bincount(seg_stack_large_2[19].astype(int).ravel()))[-10:]
 extracted_segs = imio.extract_segments(seg_stack_large_2[19], ids=target_segs)
+joint_seg = join_segmentations(best_seg, gt_larger_testing_2)
 imio.write_h5_stack(npy_vol=split_vi_array_2, compression='lzf', fn='stack_of_segs_20_10.h5')
 imio.write_vtk(extracted_seg, fn='extraced_seg_5_10.vtk',spacing=[4, 4, 40])
-imio.write_vtk(gt_larger_2,fn='extraced_gt_5_10.vtk',spacing=[4, 4, 40])
-imio.write_vtk(img_as_ubyte(raw_larger_2),fn='extraced_raw_5_10.vtk',spacing=[4, 4, 40])
+imio.write_vtk(gt_larger_2, fn='extraced_gt_5_10.vtk',spacing=[4, 4, 40])
+imio.write_vtk(img_as_ubyte(raw_larger_2), fn='extraced_raw_5_10.vtk', spacing=[4, 4, 40])
+
+def write_out_info(stack_of_segs):
+    """Write out vtk files of worst merge and worst split comps, and stack of agglomerated segmentations."""
+    import datetime
+    date = datetime.datetime.now()
+    short_date = date.date()
+    imio.write_vtk(extracted_worst_merge_comps, fn='worst_merge_comps_{short_date}.vtk',spacing=[4, 4, 40])
+    imio.write_vtk(raw_test_slice, fn='raw_test_slice_{short_date}.vtk',spacing=[4, 4, 40])
+    imio.write_h5_stack(npy_vol=stack_of_segs, compression='lzf', fn=f'stack_of_segs_{short_date}.h5')
