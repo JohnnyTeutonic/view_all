@@ -2,7 +2,7 @@
 Segment_Viewer
 ===
 
-    Segment_Viewer is a Python package for nD image segmentation.
+    Segment_Viewer is a Python package for n-dim image segmentation.
 """
 
 __author__ = 'Jonathan Reich <jreich@student.unimelb.edu.au>, '
