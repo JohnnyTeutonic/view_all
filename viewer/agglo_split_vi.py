@@ -34,7 +34,7 @@ g_test_large_2.agglomerate(np.inf)
 seg_stack_large_2 = [g_test_large_2.get_segmentation(t) for t in np.arange(0,1, 0.01)]
 split_vi_score_large_2 = [ev.split_vi(seg_stack_large_2[t], gt_larger_testing_2) for t in range(len(seg_stack_large_2))]
 split_vi_array_2 = np.array(split_vi_score_large_2)
-fig, ax = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True)
+fig, ax = plt.subplots(nrows=1, ncols=2)
 ax[0].plot(split_vi_array_2[:, 1], split_vi_array_2[:, 0])
 target_segs = np.argsort(np.bincount(seg_stack_large_2[19].astype(int).ravel()))[-10:]
 plt.plot(split_vi_array_new.sum(axis=1))
