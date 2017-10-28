@@ -1,4 +1,6 @@
 import os
+import datetime
+import tempfile
 from gala import evaluate as ev, imio, viz, morpho, agglo, classify, features
 from skimage.segmentation import join_segmentations
 from skimage.color import label2rgb
@@ -59,9 +61,21 @@ imio.write_vtk(img_as_ubyte(raw_larger_2), fn='extraced_raw_5_10.vtk', spacing=[
 
 def write_out_info(stack_of_segs):
     """Write out vtk files of worst merge and worst split comps, and stack of agglomerated segmentations."""
-    import datetime
     date = datetime.datetime.now()
     short_date = date.date()
-    imio.write_vtk(extracted_worst_merge_comps, fn='worst_merge_comps_{short_date}.vtk',spacing=[4, 4, 40])
-    imio.write_vtk(raw_test_slice, fn='raw_test_slice_{short_date}.vtk',spacing=[4, 4, 40])
-    imio.write_h5_stack(npy_vol=stack_of_segs, compression='lzf', fn=f'stack_of_segs_{short_date}.h5')
+    merge_idxs_m, merge_errs_m = ev.sorted_vi_components(joint_seg, best_seg_bpm)[2:4]
+    cont_table_m = ev.contingency_table(joint_seg, best_seg_bpm)
+    worst_merge_comps_m = ev.split_components(merge_idxs_m[0], num_elems=10, cont=cont_table_m.T, axis=0)
+    worst_merge_array_m = np.array(worst_merge_comps_m[0:3], dtype=np.int64)
+    worst_merge_array_m[:, 0]
+    np.cumsum(np.array(worst_merge_comps_m)[:, 1])
+    extracted_worst_merge_comps_m = imio.extract_segments(ids=worst_merge_array_m[:, 0], seg=joint_seg)
+    imio.write_vtk(extracted_worst_merge_comps_m, fn=f'worst_merge_comps_m_{short_date}.vtk',spacing=[4, 4, 40])
+    split_idxs_s, split_errs_s = ev.sorted_vi_components(joint_seg, gt_raw_testing)[0:2]
+    cont_table_s = ev.contingency_table(joint_seg, gt_raw_testing)
+    worst_split_comps_s = ev.split_components(split_idxs_s[0], num_elems=10, cont=cont_table_s.T, axis=0)
+    worst_split_array_s = np.array(worst_split_comps_s[0:3], dtype=np.int64)
+    worst_split_array_s[:, 0]
+    np.cumsum(np.array(worst_split_comps_s)[:, 1])
+    extracted_worst_split_comps_s = imio.extract_segments(ids=worst_split_array_s[:, 0], seg=joint_seg)
+    imio.write_vtk(extracted_worst_split_comps_s, fn=f'worst_split_comps_s_{short_date}.vtk',spacing=[4, 4, 40])
