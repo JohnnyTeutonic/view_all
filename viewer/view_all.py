@@ -14,8 +14,11 @@ import numpy as np
 from numba import jit
 from gala import evaluate as ev, imio, viz
 from matplotlib import pyplot as plt
+from skimage.segmentation import join_segmentations
+from skimage.measure import label
 from skimage.util import regular_seeds
 from skimage import morphology as morph
+
 import click
 import prompt_toolkit
 
@@ -49,7 +52,8 @@ if len(sys.argv) == 2:
 RAW = np.max(RAW) - RAW
 RAW = RAW[RAW.shape[0]//2]
 GT = GT[GT.shape[0]//2]
-SEEDS = regular_seeds(RAW.shape, np.random.randint(1100, 2100))
+GT = label(GT)
+SEEDS = regular_seeds(RAW.shape, np.random.randint(200, 225))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
 
 
@@ -89,8 +93,9 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     idxs1, idxs2 = np.argsort(ii1), np.argsort(ii2)
     err_unsorted, err_unsorted_2 = err1[idxs1], err2[idxs2]
     err_img, err_img_1 = err_unsorted[gt], err_unsorted_2[automated_seg]
+    joint_seg = join_segmentations(automated_seg, gt)
     if axis is None:
-        fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
+        fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True, sharey=True)
         plt.setp(ax.flat, adjustable='box-forced')
     else:
         fig, ax = plt.subplots(nrows=len(axis)//2, ncols=len(axis)//2,
@@ -99,18 +104,25 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
             ax[0, i] = ax[i]
         for i in range(0, (len(axis)//2)):
             ax[1, i] = ax[i+2]
+
     ax[0, 0].imshow(RAW)
-    viz.imshow_magma(err_img, alpha=0.4, axis=ax[0, 0])
+    viz.imshow_magma(err_img_1, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(RAW)
     axes_image_1 = ax[0, 1].imshow(err_img_1, alpha=0.4)
+    ax[0, 2].imshow(RAW)
+    viz.imshow_rand(gt, alpha=0.4, axis=ax[0, 2])
     ax[1, 0].imshow(RAW)
-    viz.imshow_magma(err_img_1, alpha=0.4, axis=ax[1, 0])
+    viz.imshow_magma(err_img, alpha=0.4, axis=ax[1, 0])
     ax[1, 1].imshow(RAW)
     axes_image = viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[1, 1])
-    ax[0, 0].set_title("Automated seg: click to show worst merges.")
-    ax[0, 1].set_title("Worst merge comps in gt, colored by VI error.")
-    ax[1, 0].set_title("Ground truth: click to show worst splits.")
-    ax[1, 1].set_title("Worst split comps in the gt, colored by VI error.")
+    ax[1, 2].imshow(RAW)
+    viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[1, 2])
+    ax[0, 0].set_title("Worst merge comps colored by VI error: click to show them on second panel.")
+    ax[0, 1].set_title("Worst merge comps.")
+    ax[0, 2].set_title("Ground Truth.")
+    ax[1, 0].set_title("Worst split comps colored by VI error: click to show them on second panel.")
+    ax[1, 1].set_title("Worst split comps.")
+    ax[1, 2].set_title("Automated Seg.")
 
     @jit
     def drawer(seg, comps, limit=True):
@@ -131,11 +143,12 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     @jit
     def _onpress(event):
         """Matplotlib 'onpress' event handler."""
-        if not (event.inaxes == ax[1, 0] or event.inaxes == ax[0, 0]):
+        if not (event.inaxes == ax[1, 0] or event.inaxes == ax[0, 0]
+                or event.inaxes == ax[0, 2] or event.inaxes == ax[1, 2]):
             fig.text(0.5, 0.5, s="Must click on left axes to show comps!",
                      ha="center")
             fig.canvas.draw_idle()
-        if event.inaxes == ax[1, 0]:
+        if event.inaxes == ax[1, 0] or event.inaxes == ax[1, 2]:
             if event.button != 1:
                 return
             for txt in fig.texts:
@@ -146,7 +159,7 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
             new_seg = drawer(automated_seg, comps)
             axes_image.set_array(new_seg)
             fig.canvas.draw()
-        if event.inaxes == ax[0, 0]:
+        if event.inaxes == ax[0, 0] or event.inaxes == ax[0, 2]:
             if event.button != 1:
                 return
             for txt in fig.texts:
