@@ -47,9 +47,9 @@ if len(sys.argv) == 2:
                                   ["""volumes/raw""",
                                    """volumes/labels/neuron_ids"""])
     except FileNotFoundError:
-        print("File not found. \n")
+        print("File/s not found. \n")
         sys.exit(0)
-RAW = np.max(RAW) - RAW
+RAW = 1 - RAW/np.max(RAW)
 RAW = RAW[RAW.shape[0]//2]
 GT = GT[GT.shape[0]//2]
 GT = label(GT)
@@ -132,11 +132,11 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
         lim = 0.0
         for i, (j, k, z) in enumerate(comps):
             lim += k
-            if z < 0.02:
+            if z < 0.01:
                 continue
             a_seg += (seg == j) * ((i + 1) * factor)
             if limit:
-                if lim >= 0.95:
+                if lim >= 0.98:
                     break
         return a_seg
 
@@ -176,6 +176,15 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     plt.ioff()
     plt.show()
 
+#merge_idxs_m, merge_errs_m = ev.sorted_vi_components(joint_seg, best_seg_bpm)[0:2]
+#cont_table_m = ev.contingency_table(best_seg_bpm, joint_seg)
+#worst_merge_comps_m = ev.split_components(merge_idxs_m[0], num_elems=10, cont=cont_table_m.T, axis=1)
+#worst_merge_array_m = np.array(worst_merge_comps_m[0:3], dtype=np.int64)
+
+#split_idxs_s, split_errs_s = ev.sorted_vi_components(joint_seg, gt_raw_testing)[0:2]
+#cont_table_s = ev.contingency_table(joint_seg, gt_raw_testing)
+#worst_split_comps_s = ev.split_components(split_idxs_s[0], num_elems=10, cont=cont_table_s.T, axis=0)
+#worst_split_array_s = np.array(worst_split_comps_s[0:3], dtype=np.int64)
 
 if __name__ == '__main__':
     view_all(GT, AUTOMATED_SEG)
