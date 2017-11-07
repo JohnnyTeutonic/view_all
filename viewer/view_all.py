@@ -88,14 +88,21 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     elif (type(gt) or type(automated_seg)) != np.ndarray:
         return "Input arrays not of valid type."
     vint = np.vectorize(int)
+    joint_seg = join_segmentations(automated_seg, gt)
+    cont_table_m = ev.contingency_table(automated_seg, joint_seg)
+    cont_table_s = ev.contingency_table(joint_seg, gt)
+    merge_idxs_m, merge_errs_m = ev.sorted_vi_components(joint_seg, automated_seg)[0:2] #merges
+    split_idxs_s, split_errs_s = ev.sorted_vi_components(joint_seg, gt)[0:2] #split
+    merge_idxs_sorted, split_idxs_sorted = np.argsort(merge_idxs_m), np.argsort(split_idxs_s)
+    merge_unsorted, split_unsorted = merge_errs_m[merge_idxs_sorted], split_errs_s[split_idxs_sorted]
+    merge_err_img, split_err_img = merge_unsorted[automated_seg], split_unsorted[gt]
+
     cont = ev.contingency_table(automated_seg, gt)
     ii1, err1, ii2, err2 = ev.sorted_vi_components(automated_seg, gt)
-    joint_seg = join_segmentations(automated_seg, gt)
-    merge_idxs_m, merge_errs_m = ev.sorted_vi_components(joint_seg, automated_seg)[0:2]
-    split_idxs_s, split_errs_s = ev.sorted_vi_components(joint_seg, gt)[0:2]
     idxs1, idxs2 = np.argsort(ii1), np.argsort(ii2)
     err_unsorted, err_unsorted_2 = err1[idxs1], err2[idxs2]
     err_img, err_img_1 = err_unsorted[gt], err_unsorted_2[automated_seg]
+
     if axis is None:
         fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True, sharey=True)
         plt.setp(ax.flat, adjustable='box-forced')
@@ -110,13 +117,13 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     ax[0, 0].imshow(RAW)
     viz.imshow_magma(err_img_1, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(RAW)
-    axes_image_1 = viz.imshow_rand(gt, alpha=0.4, axis=ax[0, 1])
+    axes_image_1 = viz.imshow_rand(joint_seg, alpha=0.4, axis=ax[0, 1])
     ax[0, 2].imshow(RAW)
     viz.imshow_rand(gt, alpha=0.4, axis=ax[0, 2])
     ax[1, 0].imshow(RAW)
     viz.imshow_magma(err_img, alpha=0.4, axis=ax[1, 0])
     ax[1, 1].imshow(RAW)
-    axes_image = viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[1, 1])
+    axes_image = viz.imshow_rand(joint_seg, alpha=0.4, axis=ax[1, 1])
     ax[1, 2].imshow(RAW)
     viz.imshow_rand(automated_seg, alpha=0.4, axis=ax[1, 2])
     ax[0, 0].set_title("Worst merge comps colored by VI error: click to show them on second panel.")
@@ -145,22 +152,12 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     @jit
     def _onpress(event):
         """Matplotlib 'onpress' event handler."""
+
         if not (event.inaxes == ax[1, 0] or event.inaxes == ax[0, 0]
                 or event.inaxes == ax[0, 2] or event.inaxes == ax[1, 2]):
-            fig.text(0.5, 0.5, s="Must click on left axes to show comps!",
+            fig.text(0.5, 0.5, s="Must click on left or right axes to show comps!",
                      ha="center")
             fig.canvas.draw_idle()
-        if event.inaxes == ax[1, 0] or event.inaxes == ax[1, 2]:
-            if event.button != 1:
-                return
-            for txt in fig.texts:
-                txt.set_visible(False)
-            fig.canvas.draw()
-            x, y = vint(event.xdata), vint(event.ydata)
-            comps = ev.split_components(gt[y, x], cont, axis=1, num_elems=None)
-            new_seg = drawer(automated_seg, comps)
-            axes_image.set_array(new_seg)
-            fig.canvas.draw()
         if event.inaxes == ax[0, 0] or event.inaxes == ax[0, 2]:
             if event.button != 1:
                 return
@@ -168,10 +165,31 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
                 txt.set_visible(False)
             fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
-            comps = ev.split_components(automated_seg[y, x], cont, axis=0,
-                                        num_elems=None)
-            new_seg_1 = drawer(gt, comps, limit=False)
-            axes_image_1.set_array(new_seg_1)
+            #comps = ev.split_components(automated_seg[y, x], cont, axis=0,
+                                        #num_elems=None)
+            #cont_table_m = ev.contingency_table(automated_seg, joint_seg)
+            worst_merge_comps_m = ev.split_components(automated_seg[y, x], num_elems=None, cont=cont_table_m, axis=0)
+            new_seg_m = drawer(joint_seg, worst_merge_comps_m, limit=False)
+            axes_image_1.set_array(new_seg_m)
+            #new_seg_1 = drawer(gt, comps, limit=False)
+            #axes_image_1.set_array(new_seg_1)
+            fig.canvas.draw()
+
+        if event.inaxes == ax[1, 0] or event.inaxes == ax[1, 2]:
+            if event.button != 1:
+                return
+            for txt in fig.texts:
+                txt.set_visible(False)
+            fig.canvas.draw()
+            x, y = vint(event.xdata), vint(event.ydata)
+
+            #comps = ev.split_components(gt[y, x], cont, axis=1, num_elems=None)
+            #cont_table_s = ev.contingency_table(joint_seg, gt)
+            worst_split_comps_s = ev.split_components(gt[y, x], num_elems=None, cont=cont_table_s, axis=1)
+            new_seg_s = drawer(joint_seg, worst_split_comps_s)
+            axes_image.set_array(new_seg_s)
+            #new_seg = drawer(automated_seg, comps)
+            #axes_image.set_array(new_seg)
             fig.canvas.draw()
 
     fig.canvas.mpl_connect('button_press_event', _onpress)
@@ -179,12 +197,8 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     plt.show()
 
 
-#cont_table_m = ev.contingency_table(best_seg_bpm, joint_seg)
-#worst_merge_comps_m = ev.split_components(merge_idxs_m[0], num_elems=10, cont=cont_table_m.T, axis=1)
 #worst_merge_array_m = np.array(worst_merge_comps_m[0:3], dtype=np.int64)
 
-#cont_table_s = ev.contingency_table(joint_seg, gt_raw_testing)
-#worst_split_comps_s = ev.split_components(split_idxs_s[0], num_elems=10, cont=cont_table_s.T, axis=0)
 #worst_split_array_s = np.array(worst_split_comps_s[0:3], dtype=np.int64)
 
 if __name__ == '__main__':
