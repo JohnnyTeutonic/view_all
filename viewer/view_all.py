@@ -90,10 +90,12 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     vint = np.vectorize(int)
     cont = ev.contingency_table(automated_seg, gt)
     ii1, err1, ii2, err2 = ev.sorted_vi_components(automated_seg, gt)
+    joint_seg = join_segmentations(automated_seg, gt)
+    merge_idxs_m, merge_errs_m = ev.sorted_vi_components(joint_seg, automated_seg)[0:2]
+    split_idxs_s, split_errs_s = ev.sorted_vi_components(joint_seg, gt)[0:2]
     idxs1, idxs2 = np.argsort(ii1), np.argsort(ii2)
     err_unsorted, err_unsorted_2 = err1[idxs1], err2[idxs2]
     err_img, err_img_1 = err_unsorted[gt], err_unsorted_2[automated_seg]
-    joint_seg = join_segmentations(automated_seg, gt)
     if axis is None:
         fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True, sharey=True)
         plt.setp(ax.flat, adjustable='box-forced')
@@ -108,7 +110,7 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     ax[0, 0].imshow(RAW)
     viz.imshow_magma(err_img_1, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(RAW)
-    axes_image_1 = ax[0, 1].imshow(err_img_1, alpha=0.4)
+    axes_image_1 = viz.imshow_rand(gt, alpha=0.4, axis=ax[0, 1])
     ax[0, 2].imshow(RAW)
     viz.imshow_rand(gt, alpha=0.4, axis=ax[0, 2])
     ax[1, 0].imshow(RAW)
@@ -176,12 +178,11 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
     plt.ioff()
     plt.show()
 
-#merge_idxs_m, merge_errs_m = ev.sorted_vi_components(joint_seg, best_seg_bpm)[0:2]
+
 #cont_table_m = ev.contingency_table(best_seg_bpm, joint_seg)
 #worst_merge_comps_m = ev.split_components(merge_idxs_m[0], num_elems=10, cont=cont_table_m.T, axis=1)
 #worst_merge_array_m = np.array(worst_merge_comps_m[0:3], dtype=np.int64)
 
-#split_idxs_s, split_errs_s = ev.sorted_vi_components(joint_seg, gt_raw_testing)[0:2]
 #cont_table_s = ev.contingency_table(joint_seg, gt_raw_testing)
 #worst_split_comps_s = ev.split_components(split_idxs_s[0], num_elems=10, cont=cont_table_s.T, axis=0)
 #worst_split_array_s = np.array(worst_split_comps_s[0:3], dtype=np.int64)
