@@ -165,14 +165,13 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
                 txt.set_visible(False)
             fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
-            #comps = ev.split_components(automated_seg[y, x], cont, axis=0,
-                                        #num_elems=None)
-            #cont_table_m = ev.contingency_table(automated_seg, joint_seg)
+            #comps = ev.split_components(automated_seg[y, x], cont, axis=0, num_elems=None)
+            #new_seg_1 = drawer(gt, comps, limit=False)
+            #axes_image_1.set_array(new_seg_1)
             worst_merge_comps_m = ev.split_components(automated_seg[y, x], num_elems=None, cont=cont_table_m, axis=0)
             new_seg_m = drawer(joint_seg, worst_merge_comps_m, limit=False)
             axes_image_1.set_array(new_seg_m)
-            #new_seg_1 = drawer(gt, comps, limit=False)
-            #axes_image_1.set_array(new_seg_1)
+
             fig.canvas.draw()
 
         if event.inaxes == ax[1, 0] or event.inaxes == ax[1, 2]:
@@ -182,24 +181,19 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
                 txt.set_visible(False)
             fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
-
             #comps = ev.split_components(gt[y, x], cont, axis=1, num_elems=None)
-            #cont_table_s = ev.contingency_table(joint_seg, gt)
+            #new_seg = drawer(automated_seg, comps)
+            #axes_image.set_array(new_seg)
             worst_split_comps_s = ev.split_components(gt[y, x], num_elems=None, cont=cont_table_s, axis=1)
             new_seg_s = drawer(joint_seg, worst_split_comps_s)
             axes_image.set_array(new_seg_s)
-            #new_seg = drawer(automated_seg, comps)
-            #axes_image.set_array(new_seg)
+
             fig.canvas.draw()
 
     fig.canvas.mpl_connect('button_press_event', _onpress)
     plt.ioff()
     plt.show()
 
-
-#worst_merge_array_m = np.array(worst_merge_comps_m[0:3], dtype=np.int64)
-
-#worst_split_array_s = np.array(worst_split_comps_s[0:3], dtype=np.int64)
 
 if __name__ == '__main__':
     view_all(GT, AUTOMATED_SEG)
