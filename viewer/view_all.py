@@ -53,17 +53,11 @@ RAW = 1 - RAW/np.max(RAW)
 RAW = RAW[RAW.shape[0]//2]
 GT = GT[GT.shape[0]//2]
 GT = label(GT)
-SEEDS = regular_seeds(RAW.shape, np.random.randint(200, 225))
+SEEDS = regular_seeds(RAW.shape, np.random.randint(300, 350))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
 
 
-#@click.command
-#@click.option('--raw', default='volumes/raw', help='raw hdf file.')
-#@click.option('--label', default='volumes/labels/neuron_ids',
-#              prompt='segmentation file', help='labeled hdf file.')
-#@click.option('--input_file', prompt='what is the input file',
-#              help='The input image file.')
-def view_all(gt, automated_seg, num_elem=6, axis=None):
+def view_all_join(gt, automated_seg, num_elem=6, axis=None):
     """Generate an interactive figure highlighting the VI error.
 
     Parameters
@@ -78,30 +72,33 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
 
     Returns
     -------
-    A panel with four images - the bottom right corresponds to the
+    A window with six panels - the top middle image corresponds to the
     components that are the worst false merges in the automated
-    segmentation that corresponds to the components clicked in
-    the first window.
+    segmentation, which share significant area with the clicked-upon segment.
+    Likewise, the top middle image shows the worst false splits.
     """
     if gt.shape != automated_seg.shape:
         return "Input arrays are not of the same shape."
     elif (type(gt) or type(automated_seg)) != np.ndarray:
         return "Input arrays not of valid type."
     vint = np.vectorize(int)
+    # Compute the join seg of the automatic seg and the ground truth.
     joint_seg = join_segmentations(automated_seg, gt)
+    # Contingency table for merges
     cont_table_m = ev.contingency_table(automated_seg, joint_seg)
+    # Contingency table for splits
     cont_table_s = ev.contingency_table(joint_seg, gt)
+    # Sort the VI according to the largest false merge components.
     merge_idxs_m, merge_errs_m = ev.sorted_vi_components(joint_seg, automated_seg)[0:2] #merges
+    #Sort the VI according to the largest false split components.
     split_idxs_s, split_errs_s = ev.sorted_vi_components(joint_seg, gt)[0:2] #split
+    #Find the indices of these largest false merge components, and largest false splits, in descending order.
     merge_idxs_sorted, split_idxs_sorted = np.argsort(merge_idxs_m), np.argsort(split_idxs_s)
+    #Sort the errors according to the indices.
     merge_unsorted, split_unsorted = merge_errs_m[merge_idxs_sorted], split_errs_s[split_idxs_sorted]
+    # Color both the seg and gt according to the intensity of the split VI error.
     merge_err_img, split_err_img = merge_unsorted[automated_seg], split_unsorted[gt]
 
-    cont = ev.contingency_table(automated_seg, gt)
-    ii1, err1, ii2, err2 = ev.sorted_vi_components(automated_seg, gt)
-    idxs1, idxs2 = np.argsort(ii1), np.argsort(ii2)
-    err_unsorted, err_unsorted_2 = err1[idxs1], err2[idxs2]
-    err_img, err_img_1 = err_unsorted[gt], err_unsorted_2[automated_seg]
 
     if axis is None:
         fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True, sharey=True)
@@ -115,13 +112,13 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
             ax[1, i] = ax[i+2]
 
     ax[0, 0].imshow(RAW)
-    viz.imshow_magma(err_img_1, alpha=0.4, axis=ax[0, 0])
+    viz.imshow_magma(merge_err_img, alpha=0.4, axis=ax[0, 0])
     ax[0, 1].imshow(RAW)
     axes_image_1 = viz.imshow_rand(joint_seg, alpha=0.4, axis=ax[0, 1])
     ax[0, 2].imshow(RAW)
     viz.imshow_rand(gt, alpha=0.4, axis=ax[0, 2])
     ax[1, 0].imshow(RAW)
-    viz.imshow_magma(err_img, alpha=0.4, axis=ax[1, 0])
+    viz.imshow_magma(split_err_img, alpha=0.4, axis=ax[1, 0])
     ax[1, 1].imshow(RAW)
     axes_image = viz.imshow_rand(joint_seg, alpha=0.4, axis=ax[1, 1])
     ax[1, 2].imshow(RAW)
@@ -165,9 +162,7 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
                 txt.set_visible(False)
             fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
-            #comps = ev.split_components(automated_seg[y, x], cont, axis=0, num_elems=None)
-            #new_seg_1 = drawer(gt, comps, limit=False)
-            #axes_image_1.set_array(new_seg_1)
+            # Find the indices of the false merge bodies overlapping with the coordinates of the mouse click.
             worst_merge_comps_m = ev.split_components(automated_seg[y, x], num_elems=None, cont=cont_table_m, axis=0)
             new_seg_m = drawer(joint_seg, worst_merge_comps_m, limit=False)
             axes_image_1.set_array(new_seg_m)
@@ -181,9 +176,7 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
                 txt.set_visible(False)
             fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
-            #comps = ev.split_components(gt[y, x], cont, axis=1, num_elems=None)
-            #new_seg = drawer(automated_seg, comps)
-            #axes_image.set_array(new_seg)
+            # Find the indices of the false split bodies overlapping with the coordinates of the mouse click.
             worst_split_comps_s = ev.split_components(gt[y, x], num_elems=None, cont=cont_table_s, axis=1)
             new_seg_s = drawer(joint_seg, worst_split_comps_s)
             axes_image.set_array(new_seg_s)

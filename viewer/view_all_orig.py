@@ -49,20 +49,17 @@ if len(sys.argv) == 2:
     except FileNotFoundError:
         print("File/s not found. \n")
         sys.exit(0)
+
+#Ensures that the boundaries have the highest intensity, and not the internal subcellular structures.
 RAW = 1 - RAW/np.max(RAW)
 RAW = RAW[RAW.shape[0]//2]
 GT = GT[GT.shape[0]//2]
+#Re-label the ground truth, so that segments that are contiguous in different planes are removed.
 GT = label(GT)
 SEEDS = regular_seeds(RAW.shape, np.random.randint(200, 225))
 AUTOMATED_SEG = morph.watershed(RAW, SEEDS, compactness=0.001)
 
 
-#@click.command
-#@click.option('--raw', default='volumes/raw', help='raw hdf file.')
-#@click.option('--label', default='volumes/labels/neuron_ids',
-#              prompt='segmentation file', help='labeled hdf file.')
-#@click.option('--input_file', prompt='what is the input file',
-#              help='The input image file.')
 def view_all(gt, automated_seg, num_elem=6, axis=None):
     """Generate an interactive figure highlighting the VI error.
 
@@ -74,28 +71,20 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
         corresponds to the automated segmentation.
     num_elem: Int, optional.
         This parameter determines the number of comps
-        shown upon click. Set to output '4' by default.
+        shown upon click. Set to output '6' by default.
 
     Returns
     -------
-    A panel with four images - the bottom right corresponds to the
+    A panel with six images - the top middle image corresponds to the
     components that are the worst false merges in the automated
-    segmentation that corresponds to the components clicked in
-    the first window.
+    segmentation, which share significant area with the clicked-upon segment.
+    Likewise, the top middle image shows the worst false splits.
     """
     if gt.shape != automated_seg.shape:
         return "Input arrays are not of the same shape."
     elif (type(gt) or type(automated_seg)) != np.ndarray:
         return "Input arrays not of valid type."
     vint = np.vectorize(int)
-    #joint_seg = join_segmentations(automated_seg, gt)
-    #cont_table_m = ev.contingency_table(automated_seg, joint_seg)
-    #cont_table_s = ev.contingency_table(joint_seg, gt)
-    #merge_idxs_m, merge_errs_m = ev.sorted_vi_components(joint_seg, automated_seg)[0:2] #merges
-    #split_idxs_s, split_errs_s = ev.sorted_vi_components(joint_seg, gt)[0:2] #split
-    #merge_idxs_sorted, split_idxs_sorted = np.argsort(merge_idxs_m), np.argsort(split_idxs_s)
-    #merge_unsorted, split_unsorted = merge_errs_m[merge_idxs_sorted], split_errs_s[split_idxs_sorted]
-    #merge_err_img, split_err_img = merge_unsorted[automated_seg], split_unsorted[gt]
 
     cont = ev.contingency_table(automated_seg, gt)
     ii1, err1, ii2, err2 = ev.sorted_vi_components(automated_seg, gt)
@@ -141,10 +130,12 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
         lim = 0.0
         for i, (j, k, z) in enumerate(comps):
             lim += k
+            # if the area of the component is too small, we don't want to show it.
             if z < 0.01:
                 continue
             a_seg += (seg == j) * ((i + 1) * factor)
             if limit:
+                # Limit the number of components that are shown.
                 if lim >= 0.98:
                     break
         return a_seg
@@ -165,13 +156,13 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
                 txt.set_visible(False)
             fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
+            # Identify the worst merge components that are being pointed at by the mouse click.
             comps = ev.split_components(automated_seg[y, x], cont, axis=0, num_elems=None)
+            # Create the image containing only the identified components.
             new_seg_1 = drawer(gt, comps, limit=False)
+            # Update the image with the drawn components
             axes_image_1.set_array(new_seg_1)
-            #worst_merge_comps_m = ev.split_components(automated_seg[y, x], num_elems=None, cont=cont_table_m, axis=0)
-            #new_seg_m = drawer(joint_seg, worst_merge_comps_m, limit=False)
-            #axes_image_1.set_array(new_seg_m)
-
+            # Draw this new image with the highlighted components onto the screen.
             fig.canvas.draw()
 
         if event.inaxes == ax[1, 0] or event.inaxes == ax[1, 2]:
@@ -181,13 +172,13 @@ def view_all(gt, automated_seg, num_elem=6, axis=None):
                 txt.set_visible(False)
             fig.canvas.draw()
             x, y = vint(event.xdata), vint(event.ydata)
+            # Identify the worst split components that are being pointed at by the mouse click.
             comps = ev.split_components(gt[y, x], cont, axis=1, num_elems=None)
+            # Create the image containing only the identified components.
             new_seg = drawer(automated_seg, comps)
+            # Update the image with the drawn components
             axes_image.set_array(new_seg)
-            #worst_split_comps_s = ev.split_components(gt[y, x], num_elems=None, cont=cont_table_s, axis=1)
-            #new_seg_s = drawer(joint_seg, worst_split_comps_s)
-            #axes_image.set_array(new_seg_s)
-
+            # Draw this new image with the highlighted components onto the screen.
             fig.canvas.draw()
 
     fig.canvas.mpl_connect('button_press_event', _onpress)
