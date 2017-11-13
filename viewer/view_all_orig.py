@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Script that visualises the split-VI error from an input hdf file.
+"""Interactive script that visualises the split-VI error from an input hdf file.
 
 Input file must contain two hdf groups - a raw group, and a group containing
 labelled neuron ids.

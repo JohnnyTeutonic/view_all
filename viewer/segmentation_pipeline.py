@@ -1,11 +1,12 @@
 #!/usr/bin/python3
-
-#built-ins
+"""Script that automates the segmentation pipeline, employs the watershed algorithm on three-dimensional data
+and uses the GALA algorithm for generating of a stack of automatic segmentations."""
+# built-ins
 import os
 import datetime
 import tempfile
 import multiprocessing as mp
-#libraries
+# libraries
 from gala import evaluate as ev, imio, viz, morpho, agglo, classify, features
 import line_profiler as lp
 from skimage.segmentation import join_segmentations
