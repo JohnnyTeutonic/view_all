@@ -187,6 +187,5 @@ def view_all_join(gt, automated_seg, num_elem=6, axis=None):
     plt.ioff()
     plt.show()
 
-
 if __name__ == '__main__':
-    view_all(GT, AUTOMATED_SEG)
+    view_all_join(GT, AUTOMATED_SEG)
