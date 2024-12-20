@@ -1,4 +1,4 @@
-# Segmentation_Viewer
+# Segmentation Viewer
 ---------------------
 
 # Dependencies
